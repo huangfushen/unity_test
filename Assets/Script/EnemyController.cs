@@ -1,4 +1,5 @@
-﻿using System.Collections;
+﻿using System;
+using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
@@ -18,28 +19,34 @@ public class EnemyController : MonoBehaviour
     private Rigidbody2D rigidbody2d;
     //动画组件
     private Animator animator;
+    //修复状态
+    private bool broken;
 
 
 
     // Start is called before the first frame update
     void Start()
     {
+        broken = true;
         rigidbody2d = GetComponent<Rigidbody2D>();
         animator = GetComponent<Animator>();
-        animator.SetFloat("MoveX",direction);
+        PlayMoveAnimation();
         timer = changeTime;
     }
 
     // Update is called once per frame
     void Update()
     {
+        if (!broken)
+        {
+            return;
+        }
         //计时器（控制方向）
         timer -= Time.deltaTime;
         if (timer <= 0)
         {
             direction = -direction;
-            animator.SetFloat("MoveX",direction);
-            animator.SetBool("Vertical",vertical);
+            PlayMoveAnimation();
             timer = changeTime;
         }
         Vector2 position = rigidbody2d.position;
@@ -65,5 +72,26 @@ public class EnemyController : MonoBehaviour
         {
             rubyControl.ChangeHealth(-1);
         }
+    }
+
+    private void PlayMoveAnimation()
+    {
+        if (vertical)
+        {
+            animator.SetFloat("MoveX",0);
+            animator.SetFloat("MoveY",direction);
+        }
+        else
+        {
+            animator.SetFloat("MoveX",direction);
+            animator.SetFloat("MoveY",0);
+        }
+    }
+    // 修复机器人
+    public void Fix()
+    {
+        broken = false;
+        rigidbody2d.simulated = false;
+        animator.SetTrigger("Fixed");
     }
 }

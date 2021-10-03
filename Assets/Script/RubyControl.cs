@@ -22,9 +22,12 @@ public class RubyControl : MonoBehaviour
 	private bool isInvincible;
 	// 计时器
 	private float invincibleTimer;
+	//动画方向
+	private Vector2 lookDirection = new Vector2(1,0);
+	private Animator animator;
+	//定义子弹
+	public GameObject projectilePrefab;
 	
-
-
 	// Start is called before the first frame update
     //游戏运行开始前调用的方法
     void Start()
@@ -38,6 +41,8 @@ public class RubyControl : MonoBehaviour
         isInvincible = true;
         // Debug.Log(currentHealth+"/"+maxHealth);
         Debug.Log("我是无敌的！！！");
+
+        animator = GetComponent<Animator>();
     }
 
     // Update is called once per frame
@@ -51,19 +56,36 @@ public class RubyControl : MonoBehaviour
 	  float horizontal;
 	  // 键盘上下键变量
 	  float vertical;
-	  //监听
+	  //监听按键输入
 	  horizontal = Input.GetAxis("Horizontal");
 	  vertical = Input.GetAxis("Vertical");
+	  // 保存位置
+	  Vector2 move = new Vector2(horizontal,vertical);
+	  //判断输入不趋近于0
+	  if (!Mathf.Approximately(move.x,0) || !Mathf.Approximately(move.y,0))
+	  {
+		  lookDirection.Set(move.x,move.y);
+		  lookDirection.Normalize();
+	  }
+	  animator.SetFloat("Look X",lookDirection.x);
+	  animator.SetFloat("Look Y",lookDirection.y);
+	  // 取模长，只要不为0，就有移动
+	  animator.SetFloat("Speed",move.magnitude);
 	  //改变角色位置
 	  //Time.deltaTime每帧所占用的时间
-      position.x = position.x + speed * horizontal * Time.deltaTime;
-	  position.y = position.y + speed * vertical * Time.deltaTime;
+	  // position.x = position.x + speed * horizontal * Time.deltaTime;
+	  // position.y = position.y + speed * vertical * Time.deltaTime;
 	  // 为角色赋值当前位置
       //transform.position  = position;
-      
+      position = position + move * speed * Time.deltaTime;
       //使用 rigidbody2d 定义角色当前位置  （物理系统的位移）
 	  rigidbody2d.MovePosition(position);
 	  
+	  //监听按键事件发射子弹
+	  if (Input.GetKeyDown(KeyCode.H))
+	  {
+		  Launch();
+	  }
 	  //角色无敌逻辑
 	  if (isInvincible)
 	  {
@@ -82,12 +104,12 @@ public class RubyControl : MonoBehaviour
 	    //判断是否为受到伤害
 	    if (amount < 0)
 	    {
-		    Debug.Log(isInvincible);
 		    //判断是否无敌
 		    if (isInvincible)
 		    {
 			    return;
 		    }
+		    animator.SetTrigger("Hit");
 			// 开启无敌
 		    isInvincible = true;
 		    invincibleTimer = timeInvincible;
@@ -97,5 +119,14 @@ public class RubyControl : MonoBehaviour
 	    //改变血量
 	    currentHealth = Mathf.Clamp(currentHealth+amount,0,maxHealth);
 	    Debug.Log(currentHealth+"/"+maxHealth);
+    }
+
+    private void Launch()
+    {
+	    // 实例化一枚子弹
+	    GameObject projectileObject = Instantiate(projectilePrefab,rigidbody2d.position,Quaternion.identity);
+	    Projectile projectile = projectileObject.GetComponent<Projectile>();
+	    projectile.Launch(lookDirection,300);
+	    animator.SetTrigger("Launch");
     }
 }
